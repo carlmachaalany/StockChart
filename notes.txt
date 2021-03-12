@@ -1,0 +1,7 @@
+You need to know:
+1. Advanced interactivity with touch
+2. Plotting basic and advanced charts
+3. Annotations and drawings (lines etc.)
+4. Streaming charts
+5. Chart overlays such as technical indicators
+6. Drill-down charts
