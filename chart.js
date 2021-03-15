@@ -1,7 +1,7 @@
 // margins 
 const margin = {top: 20, right: 50, bottom: 80, left: 20};
 const graphWidth = window.screen.width - 60 - margin.right - margin.left;
-const graphHeight = window.screen.height/2.5 - margin.top - margin.bottom;
+const graphHeight = window.screen.width*0.8 - margin.top - margin.bottom;
 
 // main svg 
 const svg = d3.select('.canvas').append('svg')
@@ -45,13 +45,13 @@ const lineGroup = graph.append('g');
 // create x dotted line and append to dotted line group
 const xLine = lineGroup.append('line')
     .attr('stroke', 'grey')
-    .attr('stroke-width', "2px")
-    .attr('stroke-dasharray', 4);
+    .attr('stroke-width', "1px")
+    .attr('stroke-dasharray', 2);
 // create y dotted line and append to dotted line group
 const yLine = lineGroup.append('line')
     .attr('stroke', 'grey')
-    .attr('stroke-width', "2px")
-    .attr('stroke-dasharray', 4);
+    .attr('stroke-width', "1px")
+    .attr('stroke-dasharray', 2);
 
 // grab the data from the csv file
 d3.csv('TBTCUSD_5.csv').then(data => {
@@ -60,34 +60,6 @@ d3.csv('TBTCUSD_5.csv').then(data => {
     data.forEach(item => {
         item.close = Number(item.close);
     })
-
-    // testing the waters
-    console.log(data);
-    //initialize scales
-    // xExtent = d3.extent(data, function (d, i) {
-    // return new Date(d.date);
-    // });
-    // yExtent = d3.extent(data, function (d, i) {
-    // return d.value;
-    // });
-
-
-    //the path generator for the line chart
-    // line = d3.svg
-    // .line()
-    // .x(function (d) {
-    //     return x(new Date(d.date));
-    // })
-    // .y(function (d) {
-    //     return y(d.value);
-    // });
-
-    //initialize svg
-    // svg = d3.select('#chart').append('svg');
-    // chartWrapper = svg.append('g');
-    // path = chartWrapper.append('path').datum(data).classed('line', true);
-    // chartWrapper.append('g').classed('x axis', true);
-    // chartWrapper.append('g').classed('y axis', true);
 
     //render the chart
     render(data);
@@ -105,15 +77,14 @@ const render = (data) =>  {
     path.data([data])
         .attr('fill', 'none')
         .attr('stroke', '#00bfa5')
-        .attr('stroke-width', 2)
+        .attr('stroke-width', 0.7)
         .attr('d', line)
-        .on('mouseover', d => MouseOverGraph(d)) // mouseover eventListener for showing dotted line (still not implemented well)
-        .on('mouseout', d => MouseOutGraph(d)); // mouseout eventListener for hiding dotted line (still not implemented)
+        .on('click', MouseOverGraph) // mouseover eventListener for showing dotted line (still not implemented well)
 
     //initialize axis
     xAxis = d3.axisBottom(x)
         .ticks(10)
-        .tickFormat(d3.timeFormat("%Ss")); // change the timeFormat 
+        .tickFormat(d3.timeFormat("%M:%Spm")); // change the timeFormat 
     yAxis = d3.axisRight(y);
     xAxisGroup.call(xAxis);
     yAxisGroup.call(yAxis);
@@ -122,82 +93,42 @@ const render = (data) =>  {
     xAxisGroup.selectAll('text')
         .attr('text-anchor', "end")
         .attr('transform', "rotate(-40)");
+}
 
+//function that shows dotted lines + circle 
+function MouseOverGraph(e, d) {
+    // remove the previous circle
+    graph.selectAll('circle').remove();
 
-    // create circles for objects
-    // const circles = graph.selectAll('circle')
-    //     .data(data);
+    // get the coordinates of the pointer
+    var coord = d3.pointer(e);
+
+    // set the vertical dotted line
+    xLine.attr("x1", coord[0])
+        .attr("y1", coord[1])
+        .attr('x2', coord[0])
+        .attr('y2', graphHeight)
+        .style('opacity', 0.7)
+        // .on('mouseout', function() { d3.select(this.setAttribute('opacity', 0)); })
     
-    // // remove unwanted points
-    // circles.exit().remove();
-
-    // // update current points
-    // circles.attr('cx', 1)
-    //     .attr('cy', d => y(d.close));
-
-    // // add new points
-    // console.log(circles.enter());
-    // circles.enter().append('circle')
-    //     .attr('r', 1)
-    //     .attr('cx', (d, i) => x(Date.now() + i))
-    //     .attr('cy', d => y(d.close))
-    //     .attr('fill', "#ccc");
-
-    // graph.selectAll('circle')
-    //     .on('mouseover', circleMouseOver)
-    //     .on('mouseout', circleMouseOut);
-}
-
-//function that shows dotted lines 
-function MouseOverGraph(d) {
-    console.log(d);
-    xLine.attr("x1", d.x-40)
-        .attr("y1", d.y-40)
-        .attr('x2', d.x-40)
-        .attr('y2', graphHeight)
-        .style('opacity', 0.2)
-    // set y dotted line coords (x1, x2, y1, y2)
-    yLine.attr("x1", d.x)
-        .attr("y1", d.y)
+    // set the horizonal dotted line
+    yLine.attr("x1", coord[0])
+        .attr("y1", coord[1])
         .attr('x2', graphWidth)
-        .attr('y2', d.y)
-        .style('opacity', 0.2)
+        .attr('y2', coord[1])
+        .style('opacity', 0.7);
+
+    // add the circle 
+    graph.append('circle')
+        .attr('fill', '#ccc')
+        .attr('cx', coord[0])
+        .attr('cy', coord[1])
+        .transition().duration(200)
+            .attr('r', 1)
 }
 
-// function that hides dotted lines
-function MouseOutGraph (d) {
-    console.log(d);
-}
+// window.addEventListener('resize', resize); (for responsiveness?)
 
-// IGNORE from here and on, this is for later
-function circleMouseOver(e, d) {
-    // console.log(e);
-    d3.select(this)
-        .transition().duration(100)
-        .attr('r', 8);
-    // set x dotted line coords (x1, x2, y1, y2)
-    xLine.attr("x1", d3.select(this).attr('cx'))
-        .attr("y1", d3.select(this).attr('cy'))
-        .attr('x2', d3.select(this).attr('cx'))
-        .attr('y2', graphHeight)
-        .style('opacity', 0.2)
-    // set y dotted line coords (x1, x2, y1, y2)
-    yLine.attr("x1", d3.select(this).attr('cx'))
-        .attr("y1", d3.select(this).attr('cy'))
-        .attr('x2', graphWidth)
-        .attr('y2', d3.select(this).attr('cy'))
-        .style('opacity', 0.2)
-    // show the dotted line group (.style, opacity)
-}
-
-function circleMouseOut(e, d) {
-    d3.select(this)
-        .transition().duration(100)
-        .attr('r', 4);
-    // hide the dotted line group(.style, opacity)
-    xLine.style('opacity', 0)
-    yLine.style('opacity', 0)
-}
 // function render() {
 //     //get dimensions based on window size
 //     updateDimensions(window.innerWidth);
