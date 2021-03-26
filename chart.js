@@ -19,6 +19,8 @@ const x = d3.scaleTime()
     .range([0, graphWidth]);
 const y = d3.scaleLinear()
     .range([graphHeight, 0]);
+const c = d3.scaleLinear()
+    .range([0, graphHeight]);
 
 // Axis Groups
 const xAxisGroup = graph.append('g')
@@ -58,9 +60,14 @@ d3.csv('TBTCUSD_5.csv').then(data => {
 
     // change the close attribute from string to a number
     data.forEach(item => {
+        item.open = Number(item.open);
+        item.high = Number(item.high);
+        item.low = Number(item.low);
         item.close = Number(item.close);
+        item.volume = Number(item.volume);
+        item.trades = Number(item.trades);
     })
-
+                
     //render the chart
     render(data);
 });
@@ -71,6 +78,29 @@ const render = (data) =>  {
     // set the domain of the scales
     x.domain([Date.now(), Date.now() + 713]).nice();
     y.domain([0, d3.max(data, d => d.close)]);
+    c.domain([0, d3.max(data, d => Math.abs(d.open - d.close))])
+
+    const candles = graph.selectAll("rect")
+            .data(data);
+    
+    //remove unwanted candles
+    candles.exit().remove()
+
+    // update current candles
+    candles.attr("y", function(d) {return y(d3.max([d.OPEN, d.CLOSE]));})
+        .attr("height", function(d) { 
+            return y(-Math.abs(d.OPEN - d.CLOSE));})
+        .classed("rise", function(d) { return (d.CLOSE>d.OPEN); })
+        .classed("fall", function(d) { return (d.OPEN>d.CLOSE); });
+
+    // add new candles
+    candles.enter().append('rect')
+        .attr("x", (d, i) => x(Date.now() + i))
+        .attr("y", d => y(d3.max([d.open, d.close])))
+        .attr('width', 2)  
+        .attr("height", d => c(Math.abs(d.open-d.close)))
+        .classed("rise", function(d) { return (d.close>d.open); })
+        .classed("fall", function(d) { return (d.open>d.close); });
 
     // update path data
     // path.data() takes in an array of arrays 
